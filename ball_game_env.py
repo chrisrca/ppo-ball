@@ -22,8 +22,8 @@ class BallGameEnv(gym.Env):
         self.gravity = 0.5
         self.ball_radius = 8
         self.player_radius = 15
-        self.player_acc = 0.8
-        self.player_max_speed = 9
+        self.player_acc = 1
+        self.player_max_speed = 10
         self.seed()
 
     def seed(self, seed=None):
@@ -101,7 +101,7 @@ class BallGameEnv(gym.Env):
                 state['ball_vel'][0] *= 0.9
                 state['ball_vel'][1] *= 0.9
                 state['ball_vel'][0] += state['player_vel'] * 0.3
-            state['ball_vel'][1] = min(state['ball_vel'][1], -8)
+            state['ball_vel'][1] = min(state['ball_vel'][1], -16)
 
         # Wall bounces
         if state['ball_pos'][0] <= self.ball_radius:
