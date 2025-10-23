@@ -15,7 +15,7 @@ class BallGameEnv(gym.Env):
         self.observation_space = gym.spaces.Box(low=low, high=high, dtype=np.float32)
         self.current_state = None
         self.screen = None
-        self.max_steps = 1000
+        self.max_steps = 5000
         self.steps = 0
         self.width = 400
         self.height = 400
@@ -68,10 +68,14 @@ class BallGameEnv(gym.Env):
         if abs(state['player_vel']) < 0.1:
             state['player_vel'] = 0
         state['player_pos'][0] += state['player_vel']
-        if state['player_pos'][0] < 0:
-            state['player_pos'][0] += self.width
-        elif state['player_pos'][0] > self.width:
-            state['player_pos'][0] -= self.width
+        
+        # Clamp player position and stop at walls
+        if state['player_pos'][0] < self.player_radius:
+            state['player_pos'][0] = self.player_radius
+            state['player_vel'] = 0
+        elif state['player_pos'][0] > self.width - self.player_radius:
+            state['player_pos'][0] = self.width - self.player_radius
+            state['player_vel'] = 0
 
         # Update ball
         state['ball_vel'][1] += self.gravity
@@ -97,6 +101,7 @@ class BallGameEnv(gym.Env):
                 state['ball_vel'][0] *= 0.9
                 state['ball_vel'][1] *= 0.9
                 state['ball_vel'][0] += state['player_vel'] * 0.3
+            state['ball_vel'][1] = min(state['ball_vel'][1], -8)
 
         # Wall bounces
         if state['ball_pos'][0] <= self.ball_radius:
@@ -120,6 +125,7 @@ class BallGameEnv(gym.Env):
         reward = 0
         if hit:
             reward += 10
+            reward += abs(state['ball_vel'][1]) * 0.5
         terminated = state['ball_pos'][1] >= self.height - self.ball_radius
         truncated = self.steps >= self.max_steps
         if terminated:
@@ -138,8 +144,37 @@ class BallGameEnv(gym.Env):
             pygame.init()
             self.screen = pygame.display.set_mode((self.width, self.height))
         self.screen.fill((0, 0, 0))
-        pygame.draw.circle(self.screen, (255, 255, 255), (int(self.current_state['ball_pos'][0]), int(self.current_state['ball_pos'][1])), self.ball_radius)
-        pygame.draw.circle(self.screen, (255, 0, 0), (int(self.current_state['player_pos'][0]), int(self.current_state['player_pos'][1])), self.player_radius)
+
+        # Colors
+        ball_color = (255, 255, 255)
+        player_color = (182, 242, 229)
+
+        # Draw glow effect for ball
+        for i in range(10):
+            glow_radius = self.ball_radius + (i * 1.25)
+            glow_surface = pygame.Surface((glow_radius * 2, glow_radius * 2), pygame.SRCALPHA)
+            alpha = int(20 * (1 - i / 10)) 
+            pygame.draw.circle(glow_surface, (*ball_color, alpha), (glow_radius, glow_radius), glow_radius)
+            self.screen.blit(glow_surface, (int(self.current_state['ball_pos'][0]) - glow_radius, 
+                                            int(self.current_state['ball_pos'][1]) - glow_radius))
+
+        # Draw glow effect for player
+        for i in range(10):
+            glow_radius = self.player_radius + (i * 1.25)
+            glow_surface = pygame.Surface((glow_radius * 2, glow_radius * 2), pygame.SRCALPHA)
+            alpha = int(20 * (1 - i / 10)) 
+            pygame.draw.circle(glow_surface, (*player_color, alpha), (glow_radius, glow_radius), glow_radius)
+            self.screen.blit(glow_surface, (int(self.current_state['player_pos'][0]) - glow_radius, 
+                                            int(self.current_state['player_pos'][1]) - glow_radius))
+
+        # Draw main ball and player
+        pygame.draw.circle(self.screen, ball_color, 
+                          (int(self.current_state['ball_pos'][0]), int(self.current_state['ball_pos'][1])), 
+                          self.ball_radius)
+        pygame.draw.circle(self.screen, player_color, 
+                          (int(self.current_state['player_pos'][0]), int(self.current_state['player_pos'][1])), 
+                          self.player_radius)
+
         pygame.display.flip()
 
     def close(self):
