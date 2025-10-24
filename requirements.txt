@@ -1,6 +1,8 @@
+git+https://github.com/AechPro/rlgym-ppo
 pygame==2.6.1
 rlgym==2.0.1
 stable_baselines3==2.7.0
 numpy==2.0.2
 shimmy>=2.0
 gym==0.26.2
+torch==2.5.1+cu121 --extra-index-url https://download.pytorch.org/whl/cu121
