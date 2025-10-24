@@ -51,7 +51,7 @@ class BallGameEnv(gym.Env):
         }
         if self.render_mode == 'human':
             self.render()
-        return self._get_obs(), {}
+        return self._get_obs()
 
     def step(self, action):
         state = self.current_state
